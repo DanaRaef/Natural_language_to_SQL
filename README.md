@@ -16,27 +16,28 @@
 
 ## Prerequisites 🔧
 
-- Python 3.10+ (recommended)
-- macOS: Microsoft ODBC Driver 18 for SQL Server (install via Microsoft docs)
+- Python 3.9+ (recommended)
+- System Driver: Microsoft ODBC Driver 18 for SQL Server (install via Microsoft docs)
 - An Azure SQL instance with network access from the machine running the app
-- API keys for one or both LLMs (OpenAI, Mistral)
+- Local IP must be whitelisted in the Azure SQL Firewall settings.
+- API keys for LLMs (OpenAI, Mistral)
 
 ---
 
 ## Environment variables / .env 📂
 
-Create a `.env` file in the project root with the following variables (do NOT commit secrets):
+Create a `.env` file in the project root with the following variables:
 
 ```
 USERNAME=<db_username>
 PASSWORD=<db_password>
-MISTRAL_API_KEY=<optional_mistral_api_key>
-OPENAI_API_KEY=<optional_openai_api_key>
+MISTRAL_API_KEY=<mistral_api_key>
+OPENAI_API_KEY=<openai_api_key>
 ```
 
 Notes:
 - `USERNAME` and `PASSWORD` are used to connect to your Azure SQL DB.
-- LLM keys are required to use the corresponding model in the UI.
+- LLM keys are required to use the corresponding LLM models in the UI.
 
 ---
 
@@ -74,17 +75,6 @@ Open the URL printed by Streamlit (usually http://localhost:8501).
 
 ---
 
-## Troubleshooting ⚠️
-
-- Database connection errors:
-  - Verify `USERNAME` and `PASSWORD` in `.env`.
-  - Ensure the ODBC Driver is installed and network/firewall settings allow connectivity.
-- LLM/API errors: ensure `OPENAI_API_KEY` or `MISTRAL_API_KEY` are set and valid.
-- No results returned: the query might be valid but return zero rows—check the SQL shown in the app.
-
-> Tip: Exception details are shown in the Streamlit UI to help debug connection and execution issues.
-
----
 
 ## Development notes 🔧
 
@@ -94,12 +84,5 @@ Open the URL printed by Streamlit (usually http://localhost:8501).
   - `fix_sql_chain` attempts to repair SQL errors using the DB schema and error message.
   - `chart_xy_chain` recommends chart type and axes using a dataframe summary and a pydantic parser.
 - Session state keys used: `engine`, `db`, `last_sql`, `model_name`.
-
----
-
-## Security & Privacy 🔐
-
-- Do not commit `.env` or any secrets to version control.
-- The app sends queries and schema metadata to LLM providers as part of the reasoning and validation—review provider policies if working with sensitive data.
 
 ---
