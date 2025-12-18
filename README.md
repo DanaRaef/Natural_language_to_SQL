@@ -59,7 +59,7 @@ pip install -r requirements.txt
 3. Run the app:
 
 ```bash
-streamlit run streamlit_final.py
+streamlit run natural_lang_to_sql.py
 ```
 
 Open the URL printed by Streamlit (usually http://localhost:8501).
@@ -78,7 +78,7 @@ Open the URL printed by Streamlit (usually http://localhost:8501).
 
 ## Development notes 🔧
 
-- Main file: `streamlit_final.py`.
+- Main file: `natural_lang_to_sql.py`.
 - Key components:
   - `validate_chain` ensures only read-only SELECT queries and returns JSON `{ status, reason, query }`.
   - `fix_sql_chain` attempts to repair SQL errors using the DB schema and error message.
