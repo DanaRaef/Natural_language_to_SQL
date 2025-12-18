@@ -1,0 +1,11 @@
+langchain==1.2.0
+langchain_community==0.4.1
+langchain_core==1.2.2
+langchain_mistralai==1.1.1
+pandas==2.3.3
+plotly==6.5.0
+pydantic==2.12.5
+python-dotenv==1.2.1
+SQLAlchemy==2.0.45
+streamlit==1.50.0
+pyodbc>=5.0.0
