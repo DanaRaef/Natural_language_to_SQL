@@ -85,8 +85,8 @@ def init_db():
         db = SQLDatabase.from_uri(conn_str)
         return engine, db
     except Exception as e:
-        st.error("❌ Database connection failed")
-        st.exception(e)
+        st.error("❌ Database connection failed, Please manually refresh the database connection.")
+        # st.exception(e)
         return None, None
 
 def fix_sql(error: str, table_info: str, fix_sql_chain) -> str:
@@ -102,7 +102,7 @@ def execute_query(sql: str, retries: int = 3) -> Optional[pd.DataFrame]:
         try:
             return pd.read_sql(sql, engine)
         except Exception as e:
-            st.warning(f"SQL execution error: {e}. Attempting fix...")
+            # st.text(f"Query was generated with errors, Attempting to fix...")
             sql =  fix_sql(str(e), db.get_table_info(), fix_sql_chain)
     return None
 
@@ -145,7 +145,7 @@ def render_chart(df: pd.DataFrame, decision: ChartDecision):
         value = df[metric_col].sum() if len(df) > 1 else df[metric_col].iloc[0]
         st.metric(label=metric_col, value=round(value,2))
     else:
-        st.error("No suitable chart could be generated, Please use dataframe preview below.")
+        st.warning("No suitable chart could be generated, Please use dataframe preview below.")
 
 def run_pipeline(question: str) -> Optional[pd.DataFrame]:
     db = st.session_state.db
@@ -158,11 +158,16 @@ def run_pipeline(question: str) -> Optional[pd.DataFrame]:
         return None
 
     sql_query = validation.query
+    if sql_query:
+        st.subheader("Generated SQL Query")
+        st.code(sql_query, language="sql")
     df = execute_query(validation.query)
     if df is None or df.empty:
-        st.warning("No results returned.")
+        st.warning("Zero records were returned from the query.")
         return None
     decision = llm_choose_chart_and_axes(df)
+    # st.subheader(f"Chart Type: {decision.chart_type}")
+    
     render_chart(df, decision)
     return sql_query , df
 
@@ -186,6 +191,7 @@ if st.session_state.db is None:
             st.session_state.db = db
             st.sidebar.success("🟢 Connected")
             st.rerun()
+            
 else:
     st.sidebar.success("🟢 Connected")
     if st.sidebar.button("Disconnect"):
@@ -239,7 +245,6 @@ if run_clicked:
             st.subheader("Query Results")
             st.dataframe(df_result)
 
-            st.subheader("Generated SQL Query")
-            st.code(sql_query, language="sql")
+
 
             

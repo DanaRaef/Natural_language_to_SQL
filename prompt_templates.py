@@ -30,6 +30,13 @@ Rules:
 
 If VALID:
 - Generate ONE Azure SQL SELECT query.
+- Ensure correct syntax and schema usage.
+- Select relevant columns only (eg. What is the count of churn reasons per churn month -> Retrieve only the churn_reasons_count and churn_month columns).
+- use date columns only for dates.
+- Review fact table carefully, If all data is in fact table,DO NOT join dimension tables.
+- If fact table has its own date column, prefer it over joining dimension tables for date filtering.(eg. use 'paid_date' instead of joining 'date_dim' table).
+- Optimize for performance.
+                                                    
 
 If INVALID:
 - query must be null.
@@ -60,40 +67,41 @@ JSON Response:
 """)
 
 chart_xy_prompt = ChatPromptTemplate.from_template("""
-You are a data visualization expert.
+You are a Data Visualization AI. Your goal is to map a dataset summary to the best possible chart configuration.
 
-Your task:
-Choose the BEST chart type AND the appropriate X and Y columns for the given dataframe.
-
-Rules (STRICT):
-- Choose chart_type ONLY from: line, bar, pie, scatter, kpi ,None
-- Use ONLY column names that exist in the dataframe
-- X must be a single column or null
-- Y must be a list of column names or null
-
-Chart selection guidance (STRICT):
-- Time series → line chart: X must be DATETIME, Y must be NUMERIC
-- Categorical comparison → bar chart: X CATEGORICAL, Y NUMERIC
-- Pie chart → CATEGORICAL on X, NUMERIC on Y
-- Scatter → NUMERIC X and NUMERIC Y
-- KPI → single NUMERIC value, Y must contain exactly ONE NUMERIC column, X must be null
-- If no suitable chart can be created, choose chart_type as None, and set X and Y to null
-
-Additional rules:
-- If multiple numeric columns exist for bar/pie/scatter, pick the most meaningful or the first one
-- If one categorical column only exists and no numeric column, choose chart_type as None
-- Output ONLY valid JSON, no explanations, no markdown, no extra text
-                                                   
-
-JSON FORMAT:
-{{
-  "chart_type": "line, bar, pie, scatter, kpi, None",
-  "x": "X column name or null",
-  "y": "Y column name(s) or null"
-}}
-
-Dataset summary:
+### INPUT DATA SUMMARY:
 {df_summary}
 
-JSON output:
+### SELECTION LOGIC (Follow these steps in order):
+
+1. IDENTIFY COLUMN TYPES:
+   - Identify which columns are DATETIME, CATEGORICAL (object/string), or NUMERIC (int/float).
+
+2. CHOOSE CHART TYPE:
+   - IF (X is DATETIME) AND (Y is NUMERIC) -> "line"
+   - IF (X is CATEGORICAL) AND (Y is NUMERIC) -> "bar" 
+   - IF (X is NUMERIC) AND (Y is NUMERIC) -> "scatter"
+   - IF (ONLY 1 column exists AND it is NUMERIC) OR (All values are a single aggregate) -> "kpi"
+   - IF (Only CATEGORICAL column(s) exist) AND (No NUMERIC columns) -> "None"
+   - IF (X is CATEGORICAL) AND (Dataset represents parts of a whole) -> "pie" 
+   - IF (NO NUMERIC columns exist) -> "None"
+
+3. ASSIGN AXES:
+   - X: A single string (the column name).
+   - Y: A LIST of strings (the numeric column names).
+
+### CONSTRAINTS:
+- You MUST return "bar" if there is one categorical column (like 'churn_reason') and one numeric column (like 'count').
+- Use ONLY the exact column names provided in the summary.
+- Output MUST be a single, valid JSON object.
+- NO markdown (```json), NO whitespace before/after JSON, NO commentary.
+
+### REQUIRED JSON FORMAT:
+{{
+  "chart_type": "line", "bar", "pie", "scatter", "kpi", or "None",
+  "x": "column_name_string",
+  "y": ["column_name_string"]
+}}
+
+JSON OUTPUT:
 """)
