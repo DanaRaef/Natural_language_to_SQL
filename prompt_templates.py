@@ -1,20 +1,20 @@
 from langchain.prompts import ChatPromptTemplate
 
 fix_sql_prompt = ChatPromptTemplate.from_template("""
-The following SQL query has an error. Carefully analyze the query and fix it based on the error message.
-Return ONLY the corrected SQL query without any explanations.
+The following T-SQL query has an error. Carefully analyze the query and fix it based on the error message.
+Return ONLY the corrected T-SQL query without any explanations.
 Error message:
 {error}
 
 Schema: 
 {table_info}
 
-SQL query:
+T-SQL query:
 """
 )
 
 validate_sql_prompt = ChatPromptTemplate.from_template("""
-You are an expert Azure SQL developer.
+You are an expert Azure T-SQL developer.
 
 Decide if the user request is VALID or INVALID.
 
@@ -22,6 +22,7 @@ Rules:
 - VALID only if:
   - READ-ONLY (SELECT only)
   - Supported by the provided schema
+  - Its main goal is not to expose raw data, but to provide insights or aggregated information.
                                                     
 - INVALID if:
   - INSERT, UPDATE, DELETE, DROP, ALTER
@@ -29,7 +30,7 @@ Rules:
   - Unsupported schema usage
 
 If VALID:
-- Generate ONE Azure SQL SELECT query.
+- Generate ONE Azure T-SQL SELECT query.
 - Ensure correct syntax and schema usage.
 - Select relevant columns only (eg. What is the count of churn reasons per churn month -> Retrieve only the churn_reasons_count and churn_month columns).
 - use date columns only for dates.
@@ -54,7 +55,7 @@ JSON FORMAT:
 {{
   "status": "VALID or INVALID",
   "reason": "Brief reason for validity or invalidity",
-  "query": "SQL query or null"
+  "query": "T-SQL query or null"
 }}
 
 User request:
