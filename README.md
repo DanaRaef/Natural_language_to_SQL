@@ -62,7 +62,7 @@ pip install -r requirements.txt
 streamlit run natural_lang_to_sql.py
 ```
 
-Open the URL printed by Streamlit (usually http://localhost:8501).
+Open the URL printed by Streamlit.
 
 ---
 
