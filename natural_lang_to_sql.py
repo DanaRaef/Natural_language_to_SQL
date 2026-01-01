@@ -36,6 +36,7 @@ params = urllib.parse.quote_plus(
     "Connection Timeout=60;" 
     "ConnectRetryCount=3;"   
     "ConnectRetryInterval=10;"
+    "ApplicationIntent=ReadOnly;"
 )
 
 conn_str = f"mssql+pyodbc:///?odbc_connect={params}"
@@ -46,12 +47,14 @@ conn_str = f"mssql+pyodbc:///?odbc_connect={params}"
 mistral_llm = ChatMistralAI(
     model="mistral-large-2512",
     temperature=0,
+    max_tokens=400,
     mistral_api_key=os.environ.get("MISTRAL_API_KEY"),
 )
 
 openai_llm = init_chat_model(
     model="gpt-4.1-mini",
     temperature=0,
+    max_tokens=400,
     openai_api_key=os.environ["OPENAI_API_KEY"],
 )
 
@@ -85,7 +88,7 @@ def init_db():
         db = SQLDatabase.from_uri(conn_str)
         return engine, db
     except Exception as e:
-        st.error("❌ Database connection failed, Please manually refresh the database connection.")
+        st.error("❌ Database connection failed, Please manually refresh the database connection or make sure IP address is added.")
         # st.exception(e)
         return None, None
 
@@ -102,7 +105,8 @@ def execute_query(sql: str, retries: int = 3) -> Optional[pd.DataFrame]:
         try:
             return pd.read_sql(sql, engine)
         except Exception as e:
-            # st.text(f"Query was generated with errors, Attempting to fix...")
+            st.text(f"Query was generated with errors, Attempting to fix...")
+            st.error(str(e))
             sql =  fix_sql(str(e), db.get_table_info(), fix_sql_chain)
     return None
 
@@ -147,10 +151,33 @@ def render_chart(df: pd.DataFrame, decision: ChartDecision):
     else:
         st.warning("No suitable chart could be generated, Please use dataframe preview below.")
 
-def run_pipeline(question: str) -> Optional[pd.DataFrame]:
-    db = st.session_state.db
+def get_minified_schema(engine) -> str: 
+    # Query to get table names, column names, and data types
+    query = """
+    SELECT 
+        t.TABLE_NAME, 
+        c.COLUMN_NAME, 
+        c.DATA_TYPE
+    FROM INFORMATION_SCHEMA.TABLES t
+    JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_NAME = c.TABLE_NAME
+    WHERE t.TABLE_TYPE = 'BASE TABLE'
+    AND t.TABLE_SCHEMA = 'dbo' -- or your specific schema
+    ORDER BY t.TABLE_NAME;
+    """
+    df = pd.read_sql(query, engine)
+    
+    schema_parts = []
+    # Group by table to create the "Table(col1, col2)" format
+    for table_name, group in df.groupby('TABLE_NAME'):
+        columns = ", ".join([f"{row['COLUMN_NAME']} ({row['DATA_TYPE']})" for _, row in group.iterrows()])
+        schema_parts.append(f"{table_name}: {columns}")
+    
+    return "\n".join(schema_parts)
 
-    table_info = db.get_table_info()
+def run_pipeline(question: str) -> Optional[pd.DataFrame]:
+    # db = st.session_state.db
+
+    table_info = get_minified_schema(st.session_state.engine)
     validation = validate_chain.invoke({"table_info": table_info, "question": question})
 
     if validation.status != "VALID":
@@ -244,7 +271,3 @@ if run_clicked:
 
             st.subheader("Query Results")
             st.dataframe(df_result)
-
-
-
-            
